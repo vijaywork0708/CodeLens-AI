@@ -38,13 +38,30 @@ public class RepoService {
                     .findByUserIdAndGithubRepoId(userId,githubRepoId)
                     .orElseGet(Repository::new);
 
-            String fullName = String.valueOf(remote.get("fullName"));
-            String[] parts = fullName.split("/", 2);
+            String fullName = remote.get("full_name") != null
+                    ? String.valueOf(remote.get("full_name"))
+                    : null;
+
+            String name = remote.get("name") != null
+                    ? String.valueOf(remote.get("name"))
+                    : null;
+
+            String owner = null;
+
+            Object ownerObj = remote.get("owner");
+
+            if (ownerObj instanceof Map<?, ?> ownerMap) {
+                Object login = ownerMap.get("login");
+
+                if (login != null) {
+                    owner = String.valueOf(login);
+                }
+            }
 
             repo.setUserId(userId);
             repo.setGithubRepoId(githubRepoId);
-            repo.setOwner(parts.length > 0 ? parts[0] : String.valueOf(remote.get("owner")));
-            repo.setName(parts.length > 1 ? parts[1] : String.valueOf(remote.get("name")));
+            repo.setOwner(owner);
+            repo.setName(name);
             repo.setFullName(fullName);
             repo.setPrivate(Boolean.TRUE.equals(remote.get("private")));
             repo.setDefaultBranch(remote.get("default_branch") != null
@@ -54,12 +71,6 @@ public class RepoService {
             repo.setHtmlUrl(remote.get("html_url") != null ? String.valueOf(remote.get("html_url")): null);
             repo.setDescription(remote.get("description") != null ? String.valueOf(remote.get("description")): null);
             repo.setUpdatedAt(Instant.now());
-            if(repo.getOwner() == null || repo.getOwner().isBlank()){
-                Object ownerObj = remote.get("owner");
-                if(ownerObj instanceof Map<?,?> ownerMap && ownerMap.get("login") != null){
-                    repo.setOwner(String.valueOf(ownerMap.get("login")));
-                }
-            }
             saved.add(repoRepository.save(repo));
         }
         return saved.stream()

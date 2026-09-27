@@ -63,8 +63,13 @@ public class IndexingService {
 
     @Async("indexingExecutor")
     public void indexAsync(UUID repoId, UUID userId){
+        log.info("========== ASYNC INDEXING STARTED ==========");
+        log.info("Repo ID: {}", repoId);
+        log.info("User ID: {}", userId);
         try {
+            log.info("Calling doIndex()...");
             doIndex(repoId,userId);
+            log.info("========== ASYNC INDEXING COMPLETED ==========");
         } catch (Exception ex){
             log.error("Indexing failed for repo {}", repoId, ex);
             markFailed(repoId, ex.getMessage());
@@ -72,16 +77,23 @@ public class IndexingService {
     }
 
     private void doIndex(UUID repoId, UUID userId){
+        log.info("Fetching repository {}", repoId);
         Repository repo = repoRepository.findById(repoId)
                 .orElseThrow(() -> new NotFoundException("Repository not found"));
+        log.info("Repository found: {}", repo.getFullName());
         String token = userService.decryptAccessToken(userService.requiredById(userId));
-
+        log.info("GitHub token retrieved");
         deleteExistingVectors(repoId.toString());
+
+        log.info("Existing vectors deleted");
+
+        log.info("Fetching repository tree...");
 
         Map<String, Object> tree = githubApiClient.getRepoTree(
                 token, repo.getOwner(), repo.getName(), repo.getDefaultBranch());
+        log.info("Repository tree received");
         List<String> filePaths = listIndexableFiles(tree);
-
+        log.info("Indexable files found: {}", filePaths.size());
         updateProgress(repoId, filePaths.size(),0,0, IndexStatus.INDEXING, null);
 
         List<Document> batch = new ArrayList<>();
@@ -89,6 +101,7 @@ public class IndexingService {
         int totalChunks = 0;
 
         for(String path : filePaths){
+            log.info("Processing file: {}", path);
             try {
                 String content = githubApiClient.getFileContent(
                         token, repo.getOwner(), repo.getName(), path);
@@ -96,7 +109,9 @@ public class IndexingService {
                 batch.addAll(chunks);
                 totalChunks += chunks.size();
                 if(batch.size() >= VECTOR_BATCH_SIZE){
+                    log.info("Adding {} documents to VectorStore", batch.size());
                     vectorStore.add(batch);
+                    log.info("VectorStore add completed");
                     batch.clear();
                 }
             } catch (Exception ex) {
@@ -110,8 +125,10 @@ public class IndexingService {
         }
 
         if(!batch.isEmpty()){
+            log.info("Adding final {} documents to VectorStore", batch.size());
             vectorStore.add(batch);
         }
+        log.info("Marking repository READY");
 
         markReady(repoId, filePaths.size(), processed, totalChunks, repo.getFullName());
     }
