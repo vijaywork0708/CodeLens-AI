@@ -34,12 +34,12 @@ export function RepoCard({ repo }: { repo: Repository }) {
     }
 
     function handlePrimary() {
-        if (repo.indexStatus === "READY") {
-            openChat();
-            return;
-        }
         indexMutation.mutate(repo.id, {
-            onSuccess: () => router.push(`/chat/${repo.id}`),
+            onSuccess: () => {
+                if (repo.indexStatus !== "READY") {
+                    router.push(`/chat/${repo.id}`);
+                }
+            },
         });
     }
 
@@ -150,8 +150,10 @@ export function RepoCard({ repo }: { repo: Repository }) {
                     )}
                     <Button
                         size="sm"
-                        variant={isFailed ? "outline" : "default"}
-                        className={cn(isFailed && "border-destructive/30 text-destructive hover:bg-destructive/10")}
+                        variant={isFailed || repo.indexStatus === "READY" ? "outline" : "default"}
+                        className={cn(
+                            isFailed && "border-destructive/30 text-destructive hover:bg-destructive/10"
+                        )}
                         disabled={isIndexing}
                         onClick={handlePrimary}
                     >
@@ -162,8 +164,8 @@ export function RepoCard({ repo }: { repo: Repository }) {
                             </>
                         ) : repo.indexStatus === "READY" ? (
                             <>
-                                Open
-                                <ArrowRight data-icon="inline-end" />
+                                <RotateCcw data-icon="inline-start" />
+                                Re-index
                             </>
                         ) : isFailed ? (
                             <>
