@@ -111,7 +111,6 @@ public class IndexingService {
                 if(batch.size() >= VECTOR_BATCH_SIZE){
                     log.info("Adding {} documents to VectorStore", batch.size());
                     vectorStore.add(batch);
-                    log.info("VectorStore add completed");
                     batch.clear();
                 }
             } catch (Exception ex) {
