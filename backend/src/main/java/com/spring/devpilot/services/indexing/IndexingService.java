@@ -190,7 +190,6 @@ public class IndexingService {
             repo.setUpdatedAt(Instant.now());
             repoRepository.save(repo);
         });
-        log.info("Indexed {} files ({} chunks) for {}", processedFiles, totalChunks, fullName);
     }
 
 
