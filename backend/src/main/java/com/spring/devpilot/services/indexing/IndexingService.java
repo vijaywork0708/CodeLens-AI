@@ -127,7 +127,6 @@ public class IndexingService {
             log.info("Adding final {} documents to VectorStore", batch.size());
             vectorStore.add(batch);
         }
-        log.info("Marking repository READY");
 
         markReady(repoId, filePaths.size(), processed, totalChunks, repo.getFullName());
     }
