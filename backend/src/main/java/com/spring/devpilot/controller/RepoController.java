@@ -43,16 +43,9 @@ public class RepoController {
 
     @PostMapping("/{id}/index")
     public ResponseEntity<RepositoryResponse> index(@PathVariable UUID id) {
-        log.info("========== INDEX REQUEST RECEIVED ==========");
-        log.info("REPO ID = {}", id);
         UUID userId = currentUser.require().getId();
-        log.info("USER ID = {}", userId);
         Repository repo = indexingService.startIndexing(id, userId);
-        log.info("START INDEXING COMPLETED");
-
-        log.info("ABOUT TO START ASYNC INDEXING");
         indexingService.indexAsync(id, userId);
-        log.info("ASYNC INDEXING METHOD RETURNED");
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(repoService.toResponse(repo));
     }
 
